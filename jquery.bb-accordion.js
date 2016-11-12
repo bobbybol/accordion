@@ -1,7 +1,5 @@
-/* jshint -W117 */
-
 /*!
- * BB Accordion 0.7.0 
+ * BB Accordion 2.0.0
  * https://github.com/bobbybol/accordion.js
  * @license MIT licensed
  *
@@ -16,13 +14,30 @@
      */
     
     $.fn.bbAccordion = function(options) {
-
-        // Settings extendable with options
-        var settings = $.extend({}, $.fn.bbAccordion.defaults, options);
         
-        // Set up the accordion functionality for each DOM element
-        // No objects are needed, just a lambda with closures
-        this.each(function() {
+        /**
+         * Setting the Defaults
+         */
+
+        var settings = {
+            button: ".bb-accordion--button",
+            outer: ".bb-accordion--outer",
+            inner: ".bb-accordion--inner",
+            cssTransition: false,
+            transitionSpeed: 600,
+            changeButtonHtml: false,
+            toggledButtonHtml: "Close Details"
+        };        
+        // Settings extendable with options
+        $.extend(settings, options);
+        
+
+        /**
+         * Set up the accordion functionality for each DOM element
+         * (No objects are needed, just a lambda with closures)
+         */
+        
+        return this.each(function() {
             
             /**
              * Declare variables
@@ -138,28 +153,7 @@
                 if (isOpen) {
                     resizeToOpen();
                 }
-            }); 
-            
-        });
-        
-        // return `this` for chainability
-        return this;
-        
+            });            
+        });               
     };
-
-    
-    /**
-     * Setting the Defaults
-     */
-    
-    $.fn.bbAccordion.defaults = {
-        button: ".bb-accordion--button",
-        outer: ".bb-accordion--outer",
-        inner: ".bb-accordion--inner",
-        cssTransition: false,
-        transitionSpeed: 600,
-        changeButtonHtml: false,
-        toggledButtonHtml: "Close Details"
-    };
-
 }(jQuery));
