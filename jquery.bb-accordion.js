@@ -1,159 +1,201 @@
+/* jshint -W117 */
+
 /*!
- * BB Accordion 2.0.0
+ * BB Accordion 1.0.0 
  * https://github.com/bobbybol/accordion.js
  * @license MIT licensed
  *
- * Copyright (C) 2016 bobbybol.com - A project by Bobby Bol
+ * Copyright (C) 2017 bobbybol.com - A project by Bobby Bol
  */
 
-;(function ($) {
-    "use strict";
+;( function($, window, document, undefined) {
+    'use strict';
 
     /**
-     * Defining the Plugin
+     * Setting the defaults
      */
     
-    $.fn.bbAccordion = function(options) {
-        
-        /**
-         * Setting the Defaults
-         */
+    var pluginName = 'bbAccordion';
+    var defaults = {
+        button: '.bb-accordion--button',
+        outer: '.bb-accordion--outer',
+        inner: '.bb-accordion--inner',
+        cssTransition: false,
+        transitionSpeed: 600,
+        changeButtonHtml: false,
+        toggledButtonHtml: 'Close Details'
+    };
 
-        var settings = {
-            button: ".bb-accordion--button",
-            outer: ".bb-accordion--outer",
-            inner: ".bb-accordion--inner",
-            cssTransition: false,
-            transitionSpeed: 600,
-            changeButtonHtml: false,
-            toggledButtonHtml: "Close Details"
-        };        
-        // Settings extendable with options
-        $.extend(settings, options);
+    
+    /**
+     * Composing the Plugin constructor
+     */
+    
+    function Plugin (element, options) {
         
-
-        /**
-         * Set up the accordion functionality for each DOM element
-         * (No objects are needed, just a lambda with closures)
-         */
+        // Create a settings property merged from defaults and passed options 
+        this.settings = $.extend( {}, defaults, options );
         
-        return this.each(function() {
-            
-            /**
-             * Declare variables
-             */  
-            
-            var wrapper             = $(this);
-            var button              = wrapper.find(settings.button);
-            var outer               = wrapper.find(settings.outer);
-            var inner               = outer.find(settings.inner);
-            var cssTransition       = settings.cssTransition;
-            var transitionSpeed     = settings.transitionSpeed;
-            var changeButtonHtml    = settings.changeButtonHtml;
-            var originalButtonHtml  = button.html();
-            var toggledButtonHtml   = settings.toggledButtonHtml;
-            var isOpen;
-            var __innerHeight;
-            
-            
-            /**
-             * Helper functions
-             */ 
-            
-            // Set/update __innerHeight
-            function updateInnerHeight() {
-                __innerHeight = inner.outerHeight(true);
-            }
-            
-            // Resize open accordions
-            function resizeToOpen() {
-                // set/update innerHeight
-                updateInnerHeight();
-
-                outer.css({
-                    'height': __innerHeight
-                });
-            }
-            
-            // Resize closed accordions
-            function resizeToClosed() {
-                // Set outer height to 0
-                outer.css({
-                    'height': '0px',
-                    'overflow-y': 'hidden'
-                });
-            }
-            
-            
-            /**
-             * Initialization
-             */
-            
-            (function init() {
-                // Hide overflow
-                outer.css({
-                    'overflow-y': 'hidden'
-                });
+        // General purpose properties
+        this._defaults = defaults;
+        this._name = pluginName;
+        this.element = element;
+        
+        // Plugin specific properties
+        this.wrapper            = $(element);
+        this.button             = this.wrapper.find(this.settings.button);
+        this.outer              = this.wrapper.find(this.settings.outer);
+        this.inner              = this.outer.find(this.settings.inner);
+        this.cssTransition      = this.settings.cssTransition;
+        this.transitionSpeed    = this.settings.transitionSpeed;
+        this.changeButtonHtml   = this.settings.changeButtonHtml;
+        this.originalButtonHtml = this.button.html();
+        this.toggledButtonHtml  = this.settings.toggledButtonHtml;
+        this.isOpen             = false;
+        this._innerHeight       = 0;
                 
-                // Set `isOpen` based on whether class was specified
-                if (wrapper.hasClass("bb-accordion--open")) {
-                    isOpen = true;
-                    resizeToOpen();
-                } else {
-                    isOpen = false;
-                    resizeToClosed();
-                }
+        // Initialize on construction
+        this.init();
+    }
 
-                // Use built-in CSS transition if none is specified
-                if (!cssTransition) {
-                    var speed = transitionSpeed;
-                    outer.css({
-                        '-webkit-transition': 'all ' + speed + 'ms ease-out 0s',
-                        '-moz-transition': 'all ' + speed + 'ms ease-out 0s',
-                        'transition': 'all ' + speed + 'ms ease-out 0s'
-                    });
-                }
-            })();
-            
-            
-            /**
-             * The actual toggle
-             */
-            
-            function toggleMe() {        
-                // toggle isOpen variable and class
-                isOpen = !isOpen;
-                wrapper.toggleClass("bb-accordion--open");
+    // Extend the Plugin prototype with custom methods
+    $.extend( Plugin.prototype, {
+        
+        // Helper :: update _innerHeight
+        _updateInnerHeight: function() {
+            this._innerHeight = this.inner.outerHeight(true);
+        },
+        
+        // Helper :: resize an open accordion
+        _resizeToOpen: function() {
+            // set/update innerHeight
+            this._updateInnerHeight();
 
-                if (isOpen) {
-                    if (changeButtonHtml) {
-                        button.html(toggledButtonHtml);
-                    }
-                    resizeToOpen();
-                } else {
-                    if (changeButtonHtml) {
-                        button.html(originalButtonHtml);
-                    }
-                    resizeToClosed();
+            this.outer.css({
+                height: this._innerHeight
+            });
+        },
+        
+        // Helper :: resize a closed accordion
+        _resizeToClosed: function () {
+            // Set outer height to 0
+            this.outer.css({
+                height: '0px',
+                'overflow-y': 'hidden'
+            });
+        },
+        
+        // Toggle accordion open/closed
+        toggleMe: function () {        
+            // toggle isOpen variable and class
+            this.isOpen = !this.isOpen;
+            this.wrapper.toggleClass('bb-accordion--open');
+
+            if (this.isOpen) {
+                if (this.changeButtonHtml) {
+                    this.button.html(this.toggledButtonHtml);
                 }
+                this._resizeToOpen();
+            } else {
+                if (this.changeButtonHtml) {
+                    this.button.html(this.originalButtonHtml);
+                }
+                this._resizeToClosed();
+            }
+        },
+        
+        // Open accordion
+        openMe: function() {
+            this.isOpen = true;
+            this.wrapper.addClass('bb-accordion--open');
+            
+            if (this.changeButtonHtml) {
+                this.button.html(this.toggledButtonHtml);
+            }
+            this._resizeToOpen();
+        },
+        
+        // Close accordion
+        closeMe: function() {
+            this.isOpen = false;
+            this.wrapper.removeClass('bb-accordion--open');
+            
+            if (this.changeButtonHtml) {
+                this.button.html(this.originalButtonHtml);
+            }
+            this._resizeToClosed();
+        },
+        
+        // Initialization
+        init: function() {
+            var self = this;
+            
+            // Hide overflow
+            this.outer.css({
+                'overflow-y': 'hidden'
+            });
+            
+            // Set `isOpen` based on whether class was specified
+            if (this.wrapper.hasClass('bb-accordion--open')) {
+                this.isOpen = true;
+                this._resizeToOpen();
+            } else {
+                this.isOpen = false;
+                this._resizeToClosed();
             }
             
+            // Use built-in CSS transition if none is specified
+            if (!this.cssTransition) {
+                var speed = this.transitionSpeed;
+                this.outer.css({
+                    '-webkit-transition': 'all ' + speed + 'ms ease-out 0s',
+                    '-moz-transition': 'all ' + speed + 'ms ease-out 0s',
+                    'transition': 'all ' + speed + 'ms ease-out 0s'
+                });
+            }
             
-            /**
-             * Event listeners
-             */
-            
-            // Click
-            button.click(function() {
-                toggleMe();
+            // Event listeners
+            this.button.click(function() {
+                self.toggleMe();
             });
 
             // Resize
             $(window).resize(function() {
-                if (isOpen) {
-                    resizeToOpen();
+                if (self.isOpen) {
+                    self._resizeToOpen();
                 }
-            });            
-        });               
+            });
+        }
+    });
+
+
+    /**
+     * Plugin wrapper around the constructor
+     * Discerns between invoking a method or the constructor
+     */
+    
+    $.fn[pluginName] = function(methodOrOptions) {
+        
+        // Check if plugin has initialized
+        if ( $(this).data(pluginName) && methodOrOptions !== undefined ) {
+            // Check a method was passed that exists among plugin methods
+            if ( $(this).data(pluginName)[methodOrOptions] ) {
+                // execute the requested method on each element
+                return this.each(function() {
+                     $(this).data(pluginName)[methodOrOptions]();
+                });
+            } else {
+                console.warn('bbAccordion: you\'re trying to invoke a method that does not exist.');
+            }    
+        }
+        // Otherwise, initialize the plugin
+        else {
+            return this.each(function() {
+                if (!$.data(this, pluginName)) {
+                    $.data(this, pluginName, new Plugin(this, methodOrOptions));
+                }
+            });
+        } 
     };
-}(jQuery));
+
+})(jQuery, window, document);
