@@ -1,7 +1,7 @@
 /* jshint -W117 */
 
 /*!
- * BB Accordion 1.0.0 
+ * BB Accordion 1.1.0 
  * https://github.com/bobbybol/accordion.js
  * @license MIT licensed
  *
@@ -23,7 +23,8 @@
         cssTransition: false,
         transitionSpeed: 600,
         changeButtonHtml: false,
-        toggledButtonHtml: 'Close Details'
+        toggledButtonHtml: 'Close Details',
+        exclusive: false
     };
 
     
@@ -31,7 +32,7 @@
      * Composing the Plugin constructor
      */
     
-    function Plugin (element, options) {
+    function Plugin (element, originalSelector, options) {
         
         // Create a settings property merged from defaults and passed options 
         this.settings = $.extend( {}, defaults, options );
@@ -43,6 +44,7 @@
         
         // Plugin specific properties
         this.wrapper            = $(element);
+        this.originalSelector   = originalSelector;
         this.button             = this.wrapper.find(this.settings.button);
         this.outer              = this.wrapper.find(this.settings.outer);
         this.inner              = this.outer.find(this.settings.inner);
@@ -51,6 +53,7 @@
         this.changeButtonHtml   = this.settings.changeButtonHtml;
         this.originalButtonHtml = this.button.html();
         this.toggledButtonHtml  = this.settings.toggledButtonHtml;
+        this.exclusive          = this.settings.exclusive;
         this.isOpen             = false;
         this._innerHeight       = 0;
                 
@@ -59,7 +62,7 @@
     }
 
     // Extend the Plugin prototype with custom methods
-    $.extend( Plugin.prototype, {
+    $.extend(Plugin.prototype, {
         
         // Helper :: update _innerHeight
         _updateInnerHeight: function() {
@@ -87,7 +90,7 @@
         
         // Toggle accordion open/closed
         toggleMe: function () {        
-            // toggle isOpen variable and class
+            // Toggle isOpen variable and class
             this.isOpen = !this.isOpen;
             this.wrapper.toggleClass('bb-accordion--open');
 
@@ -156,6 +159,11 @@
             
             // Event listeners
             this.button.click(function() {
+                // If exclusive is true, first close all accordions of same type
+                if(self.exclusive && !self.isOpen) {
+                    $(self.originalSelector).bbAccordion('closeMe');
+                }
+                
                 self.toggleMe();
             });
 
@@ -174,13 +182,14 @@
      * Discerns between invoking a method or the constructor
      */
     
-    $.fn[pluginName] = function(methodOrOptions) {
+    $.fn[pluginName] = function(methodOrOptions) {        
+        var originalSelector = this.selector;
         
         // Check if plugin has initialized
-        if ( $(this).data(pluginName) && methodOrOptions !== undefined ) {
+        if ( $(this).data(pluginName) && typeof methodOrOptions !== 'object' && methodOrOptions !== undefined ) {
             // Check a method was passed that exists among plugin methods
             if ( $(this).data(pluginName)[methodOrOptions] ) {
-                // execute the requested method on each element
+                // Execute the requested method on each element
                 return this.each(function() {
                      $(this).data(pluginName)[methodOrOptions]();
                 });
@@ -192,7 +201,7 @@
         else {
             return this.each(function() {
                 if (!$.data(this, pluginName)) {
-                    $.data(this, pluginName, new Plugin(this, methodOrOptions));
+                    $.data(this, pluginName, new Plugin(this, originalSelector, methodOrOptions));
                 }
             });
         } 
